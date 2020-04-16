@@ -54,7 +54,6 @@ static const char SPEAKER_CONTROL = 'p';
 static const char FIRMWARE_VERSION = 'f';
 static const char RESET = 'k';
 static const char REAUTHORIZE = 'z';
-static const char ACTIVATESKILL = 'b';
 #ifdef ENABLE_ENDPOINT_CONTROLLERS_MENU
 static const char ENDPOINT_CONTROLLER = 'e';
 #endif
@@ -292,8 +291,6 @@ SampleAppReturnCode UserInputManager::run() {
             m_interactionManager->holdToggled();
         } else if (x == TAP) {
             m_interactionManager->tap();
-        } else if (x == ACTIVATESKILL) { //Skill
-            m_interactionManager->skill();
         } else if (x == PLAY) {
             m_interactionManager->playbackPlay();
         } else if (x == PAUSE) {

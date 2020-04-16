@@ -1600,27 +1600,12 @@ std::future<bool> DefaultClient::notifyOfHoldToTalkStart(
         holdToTalkAudioProvider, capabilityAgents::aip::Initiator::PRESS_AND_HOLD, startOfSpeechTimestamp);
 }
 
-std::future<bool> DefaultClient::notifyOfSkill(
-    capabilityAgents::aip::AudioProvider skillAudioProvider,
-    avsCommon::avs::AudioInputStream::Index beginIndex,
-    std::chrono::steady_clock::time_point startOfSpeechTimestamp) {
-    return m_audioInputProcessor->recognize(
-        skillAudioProvider, capabilityAgents::aip::Initiator::TAP, startOfSpeechTimestamp, beginIndex);
-}
-
-
 std::future<bool> DefaultClient::notifyOfHoldToTalkEnd() {
     return m_audioInputProcessor->stopCapture();
 }
 
 std::future<bool> DefaultClient::notifyOfTapToTalkEnd() {
     return m_audioInputProcessor->stopCapture();
-
-}
-
-std::future<bool> DefaultClient::notifyOfSkillEnd() {
-        return m_audioInputProcessor->stopCapture();
-
 }
 
 void DefaultClient::addCallStateObserver(

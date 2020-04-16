@@ -185,7 +185,6 @@ std::shared_ptr<AudioInputStream> m_AudioBuffer;
 /// String to identify log entries originating from this file.
 static const std::string TAG("SampleApplication");
 
-
 #ifdef ENABLE_ENDPOINT_CONTROLLERS_MENU
 // Note: Discoball is an imaginary endpoint where you can control its power, its light (toggle)
 // its rotation speed (range) and the color of its light (mode).
@@ -852,7 +851,6 @@ bool SampleApplication::initialize(
     auto buffer = std::make_shared<alexaClientSDK::avsCommon::avs::AudioInputStream::Buffer>(bufferSize);
     std::shared_ptr<alexaClientSDK::avsCommon::avs::AudioInputStream> sharedDataStream =
         alexaClientSDK::avsCommon::avs::AudioInputStream::create(buffer, WORD_SIZE, MAX_READERS);
-
 
     if (!sharedDataStream) {
         ACSDK_CRITICAL(LX("Failed to create shared data stream!"));

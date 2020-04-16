@@ -572,16 +572,9 @@ public:
         capabilityAgents::aip::AudioProvider holdToTalkAudioProvider,
         std::chrono::steady_clock::time_point startOfSpeechTimestamp = std::chrono::steady_clock::now()) override;
 
-       std::future<bool> notifyOfSkill(
-        capabilityAgents::aip::AudioProvider skillAudioProvider,
-        avsCommon::avs::AudioInputStream::Index beginIndex = capabilityAgents::aip::AudioInputProcessor::INVALID_INDEX,
-        std::chrono::steady_clock::time_point startOfSpeechTimestamp = std::chrono::steady_clock::now()) override;
-
     std::future<bool> notifyOfHoldToTalkEnd() override;
 
     std::future<bool> notifyOfTapToTalkEnd() override;
-
-    std::future<bool> notifyOfSkillEnd() override;
     /// }
 
     /**

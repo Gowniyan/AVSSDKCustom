@@ -568,9 +568,6 @@ private:
     /// The wake word audio provider.
     capabilityAgents::aip::AudioProvider m_wakeWordAudioProvider;
 
-      /// The skill to talk audio provider.
-    capabilityAgents::aip::AudioProvider m_skillAudioProvider;
-
 #ifdef POWER_CONTROLLER
     /// The Power Controller Handler
     std::shared_ptr<PowerControllerHandler> m_powerControllerHandler;
@@ -602,9 +599,6 @@ private:
 
     /// Whether the microphone is currently on.
     bool m_isMicOn;
-
-     /// Whether a skill is currently occurring. Creating skill audio provider
-    bool m_isSkillOccurring;
 
     /**
      * An internal executor that performs execution of callable objects passed to it sequentially but asynchronously.
