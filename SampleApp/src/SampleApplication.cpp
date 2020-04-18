@@ -389,7 +389,7 @@ SampleApplication::~SampleApplication() {
 #endif
 
     avsCommon::avs::initialization::AlexaClientSDKInit::uninitialize();
-    sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
+
 }
 
 bool SampleApplication::createMediaPlayersForAdapters(
@@ -1006,6 +1006,8 @@ bool SampleApplication::initialize(
     compatibleAudioFormat.endianness = alexaClientSDK::avsCommon::utils::AudioFormat::Endianness::LITTLE;
     compatibleAudioFormat.encoding = alexaClientSDK::avsCommon::utils::AudioFormat::Encoding::LPCM;
 
+
+
     /*
      * Creating each of the audio providers. An audio provider is a simple package of data consisting of the stream
      * of audio data, as well as metadata about the stream. For each of the three audio providers created here, the same
@@ -1042,6 +1044,7 @@ bool SampleApplication::initialize(
     bool skillAlwaysReadable = true;
     bool skillCanOverride = true;
     bool skillCanBeOverridden = true;
+    sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
     alexaClientSDK::capabilityAgents::aip::AudioProvider skillAudioProvider(
         m_AudioBuffer,
         compatibleAudioFormat,
@@ -1435,9 +1438,31 @@ std::vector<int16_t> readAudioFromFile(const std::string& fileName, bool* errorO
         }
         return {};
     }
+
+    inputFile.seekg(RIFF_HEADER_SIZE, std::ios::beg);
+
+    int numSamples = (fileLengthInBytes - RIFF_HEADER_SIZE) / 2;
+
+    std::vector<int16_t> retVal(numSamples, 0);
+
+    inputFile.read((char*)&retVal[0], numSamples * 2);
+
+    if (inputFile.gcount() != numSamples * 2) {
+        std::cout << "Error reading audio file" << std::endl;
+        if (errorOccurred) {
+            *errorOccurred = true;
+        }
+        return {};
+    }
+
+    inputFile.close();
+    if (errorOccurred) {
+        *errorOccurred = false;
+    }
+    return retVal;
 }
 
-void sendAudioFileAsRecognize(std::string audioFile) {
+void SampleApplication::sendAudioFileAsRecognize(std::string audioFile) {
     // Put audio onto the SDS saying "Tell me a joke".
     bool error = false;
     std::string file = audioFile;
