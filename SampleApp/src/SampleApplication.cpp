@@ -389,6 +389,7 @@ SampleApplication::~SampleApplication() {
 #endif
 
     avsCommon::avs::initialization::AlexaClientSDKInit::uninitialize();
+    sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
 }
 
 bool SampleApplication::createMediaPlayersForAdapters(
@@ -1380,6 +1381,7 @@ bool SampleApplication::initialize(
     return true;
 }
 
+
 std::pair<std::shared_ptr<ApplicationMediaPlayer>, std::shared_ptr<avsCommon::sdkInterfaces::SpeakerInterface>>
 SampleApplication::createApplicationMediaPlayer(
     std::shared_ptr<avsCommon::utils::libcurlUtils::HTTPContentFetcherFactory> httpContentFetcherFactory,
@@ -1412,6 +1414,35 @@ SampleApplication::createApplicationMediaPlayer(
     auto speaker = mediaPlayer->getSpeaker();
     return {std::move(mediaPlayer), speaker};
 #endif
+}
+std::vector<int16_t> readAudioFromFile(const std::string& fileName, bool* errorOccurred) {
+    const int RIFF_HEADER_SIZE = 44;
+
+    std::ifstream inputFile(fileName.c_str(), std::ifstream::binary);
+    if (!inputFile.good()) {
+        std::cout << "Couldn't open audio file!" << std::endl;
+        if (errorOccurred) {
+            *errorOccurred = true;
+        }
+        return {};
+    }
+    inputFile.seekg(0, std::ios::end);
+    int fileLengthInBytes = inputFile.tellg();
+    if (fileLengthInBytes <= RIFF_HEADER_SIZE) {
+        std::cout << "File should be larger than 44 bytes, which is the size of the RIFF header" << std::endl;
+        if (errorOccurred) {
+            *errorOccurred = true;
+        }
+        return {};
+    }
+}
+
+void sendAudioFileAsRecognize(std::string audioFile) {
+    // Put audio onto the SDS saying "Tell me a joke".
+    bool error = false;
+    std::string file = audioFile;
+    std::vector<int16_t> audioData = readAudioFromFile(file, &error);
+    m_AudioBufferWriter->write(audioData.data(), audioData.size());
 }
 
 }  // namespace sampleApp

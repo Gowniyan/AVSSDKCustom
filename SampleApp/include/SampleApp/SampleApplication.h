@@ -242,6 +242,7 @@ private:
     /// Iniitalizer object to reload PulseAudio Bluetooth modules.
     std::shared_ptr<bluetoothImplementations::blueZ::PulseAudioBluetoothInitializer> m_pulseAudioInitializer;
 #endif
+    void sendAudioFileAsRecognize(std::string audioFile);
 };
 
 }  // namespace sampleApp
