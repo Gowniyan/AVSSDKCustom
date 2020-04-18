@@ -43,9 +43,9 @@ InteractionManager::InteractionManager(
 #endif
     capabilityAgents::aip::AudioProvider holdToTalkAudioProvider,
     capabilityAgents::aip::AudioProvider tapToTalkAudioProvider,
-    capabilityAgents::aip::AudioProvider skillAudioProvider,
     std::shared_ptr<sampleApp::GuiRenderer> guiRenderer,
     capabilityAgents::aip::AudioProvider wakeWordAudioProvider,
+    capabilityAgents::aip::AudioProvider skillAudioProvider,
 #ifdef POWER_CONTROLLER
     std::shared_ptr<PowerControllerHandler> powerControllerHandler,
 #endif
@@ -268,7 +268,6 @@ void InteractionManager::tap() {
 void InteractionManager::skill() {
     m_executor.submit([this]() {
         
-        }
         if (!m_isSkillOccurring) {
         if (m_client->notifyOfSkill(m_skillAudioProvider).get()) {
                 m_isSkillOccurring = true;
