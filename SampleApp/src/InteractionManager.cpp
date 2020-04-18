@@ -43,9 +43,10 @@ InteractionManager::InteractionManager(
 #endif
     capabilityAgents::aip::AudioProvider holdToTalkAudioProvider,
     capabilityAgents::aip::AudioProvider tapToTalkAudioProvider,
+    capabilityAgents::aip::AudioProvider skillAudioProvider,
     std::shared_ptr<sampleApp::GuiRenderer> guiRenderer,
     capabilityAgents::aip::AudioProvider wakeWordAudioProvider,
-    capabilityAgents::aip::AudioProvider skillAudioProvider,
+
 #ifdef POWER_CONTROLLER
     std::shared_ptr<PowerControllerHandler> powerControllerHandler,
 #endif
@@ -91,7 +92,8 @@ InteractionManager::InteractionManager(
         m_isHoldOccurring{false},
         m_isTapOccurring{false},
         m_isCallConnected{false},
-        m_isMicOn{true} {
+        m_isMicOn{true},
+        m_isSkillOccurring{false}{
     if (m_wakeWordAudioProvider) {
         m_micWrapper->startStreamingMicrophoneData();
     }
@@ -267,7 +269,7 @@ void InteractionManager::tap() {
 
 void InteractionManager::skill() {
     m_executor.submit([this]() {
-        
+
         if (!m_isSkillOccurring) {
         if (m_client->notifyOfSkill(m_skillAudioProvider).get()) {
                 m_isSkillOccurring = true;

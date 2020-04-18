@@ -179,8 +179,8 @@ std::unordered_map<std::string, avsCommon::sdkInterfaces::SpeakerInterface::Type
 /// The singleton map from @c playerId to @c ExternalMediaAdapter creation functions.
 std::unordered_map<std::string, ExternalMediaPlayer::AdapterCreateFunction> SampleApplication::m_adapterToCreateFuncMap;
 
-std::unique_ptr<AudioInputStream::Writer> m_AudioBufferWriter;
-std::shared_ptr<AudioInputStream> m_AudioBuffer;
+std::unique_ptr<alexaClientSDK::avsCommon::avs::AudioInputStream::Writer> m_AudioBufferWriter;
+std::shared_ptr<alexaClientSDK::avsCommon::avs::AudioInputStream> m_AudioBuffer;
 
 /// String to identify log entries originating from this file.
 static const std::string TAG("SampleApplication");
@@ -866,9 +866,9 @@ bool SampleApplication::initialize(
     size_t nWords = 1024 * 1024;
     size_t wordSize = 2;
     size_t maxReaders = 3;
-    size_t bufferSize = AudioInputStream::calculateBufferSize(nWords, wordSize, maxReaders);
+    size_t wordbufferSize = alexaClientSDK::avsCommon::avs::AudioInputStream::calculateBufferSize(nWords, wordSize, maxReaders);
 
-    auto m_Buffer = std::make_shared<avsCommon::avs::AudioInputStream::Buffer>(bufferSize);
+    auto m_Buffer = std::make_shared<avsCommon::avs::AudioInputStream::Buffer>(wordbufferSize);
     auto m_Sds = avsCommon::avs::AudioInputStream::create(m_Buffer, wordSize, maxReaders);
     m_AudioBuffer = std::move(m_Sds);
     m_AudioBufferWriter = m_AudioBuffer->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE);
@@ -994,6 +994,10 @@ bool SampleApplication::initialize(
         client->addTemplateRuntimeObserver(m_guiRenderer);
     }
 
+
+
+
+
     alexaClientSDK::avsCommon::utils::AudioFormat compatibleAudioFormat;
     compatibleAudioFormat.sampleRateHz = SAMPLE_RATE_HZ;
     compatibleAudioFormat.sampleSizeInBits = WORD_SIZE * CHAR_BIT;
@@ -1037,7 +1041,6 @@ bool SampleApplication::initialize(
     bool skillAlwaysReadable = true;
     bool skillCanOverride = true;
     bool skillCanBeOverridden = true;
-    sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
     alexaClientSDK::capabilityAgents::aip::AudioProvider skillAudioProvider(
         m_AudioBuffer,
         compatibleAudioFormat,
@@ -1045,59 +1048,6 @@ bool SampleApplication::initialize(
         skillAlwaysReadable,
         skillCanOverride,
         skillCanBeOverridden);
-
-
-    std::vector<int16_t> readAudioFromFile(const std::string& fileName, bool* errorOccurred) {
-        const int RIFF_HEADER_SIZE = 44;
-
-        std::ifstream inputFile(fileName.c_str(), std::ifstream::binary);
-        if (!inputFile.good()) {
-            std::cout << "Couldn't open audio file!" << std::endl;
-            if (errorOccurred) {
-                *errorOccurred = true;
-            }
-            return {};
-        }
-        inputFile.seekg(0, std::ios::end);
-        int fileLengthInBytes = inputFile.tellg();
-        if (fileLengthInBytes <= RIFF_HEADER_SIZE) {
-            std::cout << "File should be larger than 44 bytes, which is the size of the RIFF header" << std::endl;
-            if (errorOccurred) {
-                *errorOccurred = true;
-            }
-            return {};
-        }
-
-        inputFile.seekg(RIFF_HEADER_SIZE, std::ios::beg);
-
-        int numSamples = (fileLengthInBytes - RIFF_HEADER_SIZE) / 2;
-
-        std::vector<int16_t> retVal(numSamples, 0);
-
-        inputFile.read((char*)&retVal[0], numSamples * 2);
-
-        if (inputFile.gcount() != numSamples * 2) {
-            std::cout << "Error reading audio file" << std::endl;
-            if (errorOccurred) {
-                *errorOccurred = true;
-            }
-            return {};
-        }
-
-        inputFile.close();
-        if (errorOccurred) {
-            *errorOccurred = false;
-        }
-        return retVal;
-    }
-
-    void sendAudioFileAsRecognize(std::string audioFile) {
-        // Put audio onto the SDS saying "Tell me a joke".
-        bool error = false;
-        std::string file = audioFile;
-        std::vector<int16_t> audioData = readAudioFromFile(file, &error);
-        m_AudioBufferWriter->write(audioData.data(), audioData.size());
-    }
 
 
 #ifdef PORTAUDIO
@@ -1343,6 +1293,7 @@ bool SampleApplication::initialize(
 #endif
         holdToTalkAudioProvider,
         tapToTalkAudioProvider,
+        skillAudioProvider,
         m_guiRenderer,
         wakeWordAudioProvider
 #ifdef POWER_CONTROLLER
@@ -1379,6 +1330,7 @@ bool SampleApplication::initialize(
 #endif
         holdToTalkAudioProvider,
         tapToTalkAudioProvider,
+        skillAudioProvider,
         m_guiRenderer,
         capabilityAgents::aip::AudioProvider::null()
 #ifdef POWER_CONTROLLER

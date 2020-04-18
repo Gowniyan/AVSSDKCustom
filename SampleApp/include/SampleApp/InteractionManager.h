@@ -73,7 +73,7 @@ public:
     /**
      * Constructor.
      */
-    InteractionManager(
+    InteractionManager (
         std::shared_ptr<defaultClient::DefaultClient> client,
         std::shared_ptr<applicationUtilities::resources::audio::MicrophoneInterface> micWrapper,
         std::shared_ptr<sampleApp::UIManager> userInterface,
@@ -565,11 +565,11 @@ private:
     /// The tap to talk audio provider.
     capabilityAgents::aip::AudioProvider m_tapToTalkAudioProvider;
 
+    /// The skill to talk audio provider.
+    capabilityAgents::aip::AudioProvider m_skillAudioProvider;
+
     /// The wake word audio provider.
     capabilityAgents::aip::AudioProvider m_wakeWordAudioProvider;
-
-      /// The skill to talk audio provider.
-    capabilityAgents::aip::AudioProvider m_skillAudioProvider;
 
 #ifdef POWER_CONTROLLER
     /// The Power Controller Handler
