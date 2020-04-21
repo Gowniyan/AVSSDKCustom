@@ -277,7 +277,7 @@ void InteractionManager::skill() {
 
     /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
 
-    AudioBufferWriter = m_skillAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE);
+    AudioBufferWriter = m_skillAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE,true);
 
     m_executor.submit([this]() {
 
