@@ -1044,7 +1044,7 @@ bool SampleApplication::initialize(
     bool skillAlwaysReadable = true;
     bool skillCanOverride = true;
     bool skillCanBeOverridden = true;
-    sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
+    //sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
     alexaClientSDK::capabilityAgents::aip::AudioProvider skillAudioProvider(
         m_AudioBuffer,
         compatibleAudioFormat,
