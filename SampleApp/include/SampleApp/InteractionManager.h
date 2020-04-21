@@ -228,6 +228,13 @@ public:
      */
     void locale();
 
+    /**
+     * Skill audio
+     *
+     * */
+
+    void sendAudioFileAsRecognize(std::string audioFile);
+
 #ifdef ENABLE_ENDPOINT_CONTROLLERS_MENU
     /**
      * Should be called whenever a user presses 'ENDPOINT_CONTROLLER' for endpoint point controller options.

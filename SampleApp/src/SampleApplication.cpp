@@ -127,9 +127,6 @@
 namespace alexaClientSDK {
 namespace sampleApp {
 
-/// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
-static const std::string SKILL_AUDIO_FILE = "./inputs/Skill_test.wav";
-
 /// The sample rate of microphone audio data.
 static const unsigned int SAMPLE_RATE_HZ = 16000;
 
@@ -1044,7 +1041,6 @@ bool SampleApplication::initialize(
     bool skillAlwaysReadable = true;
     bool skillCanOverride = true;
     bool skillCanBeOverridden = true;
-    sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
     alexaClientSDK::capabilityAgents::aip::AudioProvider skillAudioProvider(
         m_AudioBuffer,
         compatibleAudioFormat,
@@ -1418,57 +1414,7 @@ SampleApplication::createApplicationMediaPlayer(
     return {std::move(mediaPlayer), speaker};
 #endif
 }
-std::vector<int16_t> readAudioFromFile(const std::string& fileName, bool* errorOccurred) {
-    const int RIFF_HEADER_SIZE = 44;
 
-    std::ifstream inputFile(fileName.c_str(), std::ifstream::binary);
-    if (!inputFile.good()) {
-        std::cout << "Couldn't open audio file!" << std::endl;
-        if (errorOccurred) {
-            *errorOccurred = true;
-        }
-        return {};
-    }
-    inputFile.seekg(0, std::ios::end);
-    int fileLengthInBytes = inputFile.tellg();
-    if (fileLengthInBytes <= RIFF_HEADER_SIZE) {
-        std::cout << "File should be larger than 44 bytes, which is the size of the RIFF header" << std::endl;
-        if (errorOccurred) {
-            *errorOccurred = true;
-        }
-        return {};
-    }
-
-    inputFile.seekg(RIFF_HEADER_SIZE, std::ios::beg);
-
-    int numSamples = (fileLengthInBytes - RIFF_HEADER_SIZE) / 2;
-
-    std::vector<int16_t> retVal(numSamples, 0);
-
-    inputFile.read((char*)&retVal[0], numSamples * 2);
-
-    if (inputFile.gcount() != numSamples * 2) {
-        std::cout << "Error reading audio file" << std::endl;
-        if (errorOccurred) {
-            *errorOccurred = true;
-        }
-        return {};
-    }
-
-    inputFile.close();
-    if (errorOccurred) {
-        *errorOccurred = false;
-    }
-    return retVal;
-}
-
-void SampleApplication::sendAudioFileAsRecognize(std::string audioFile) {
-    // Put audio onto the SDS saying "Tell me a joke".
-    bool error = false;
-    std::string file = audioFile;
-    std::vector<int16_t> audioData = readAudioFromFile(file, &error);
-    m_AudioBufferWriter->write(audioData.data(), audioData.size());
-}
 
 }  // namespace sampleApp
 }  // namespace alexaClientSDK

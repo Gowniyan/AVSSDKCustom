@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 
+#include <fstream>
 #include "RegistrationManager/CustomerDataManager.h"
 #include "SampleApp/InteractionManager.h"
 
@@ -29,6 +30,9 @@ namespace alexaClientSDK {
 namespace sampleApp {
 
 using namespace avsCommon::avs;
+
+/// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
+static const std::string SKILL_AUDIO_FILE = "./inputs/Skill_test.wav";
 
 InteractionManager::InteractionManager(
     std::shared_ptr<defaultClient::DefaultClient> client,
@@ -99,6 +103,8 @@ InteractionManager::InteractionManager(
     }
 };
 
+/// added for Skill
+std::unique_ptr<alexaClientSDK::avsCommon::avs::AudioInputStream::Writer> AudioBufferWriter;
 void InteractionManager::begin() {
     m_executor.submit([this]() {
         m_userInterface->printWelcomeScreen();
@@ -268,17 +274,75 @@ void InteractionManager::tap() {
 // Creating skill audio 
 
 void InteractionManager::skill() {
+
+    /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
+
+    AudioBufferWriter = m_skillAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE);
+
     m_executor.submit([this]() {
 
         if (!m_isSkillOccurring) {
         if (m_client->notifyOfSkill(m_skillAudioProvider).get()) {
-                m_isSkillOccurring = true;
+            sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
+            m_isSkillOccurring = true;
             }
         } else {
             m_isSkillOccurring = false;
             m_client->notifyOfSkillEnd();
         }
     });
+}
+
+std::vector<int16_t> readAudioFromFile(const std::string& fileName, bool* errorOccurred) {
+    const int RIFF_HEADER_SIZE = 44;
+
+    std::ifstream inputFile(fileName.c_str(), std::ifstream::binary);
+    if (!inputFile.good()) {
+        std::cout << "Couldn't open audio file!" << std::endl;
+        if (errorOccurred) {
+            *errorOccurred = true;
+        }
+        return {};
+    }
+    inputFile.seekg(0, std::ios::end);
+    int fileLengthInBytes = inputFile.tellg();
+    if (fileLengthInBytes <= RIFF_HEADER_SIZE) {
+        std::cout << "File should be larger than 44 bytes, which is the size of the RIFF header" << std::endl;
+        if (errorOccurred) {
+            *errorOccurred = true;
+        }
+        return {};
+    }
+
+    inputFile.seekg(RIFF_HEADER_SIZE, std::ios::beg);
+
+    int numSamples = (fileLengthInBytes - RIFF_HEADER_SIZE) / 2;
+
+    std::vector<int16_t> retVal(numSamples, 0);
+
+    inputFile.read((char*)&retVal[0], numSamples * 2);
+
+    if (inputFile.gcount() != numSamples * 2) {
+        std::cout << "Error reading audio file" << std::endl;
+        if (errorOccurred) {
+            *errorOccurred = true;
+        }
+        return {};
+    }
+
+    inputFile.close();
+    if (errorOccurred) {
+        *errorOccurred = false;
+    }
+    return retVal;
+}
+
+void InteractionManager::sendAudioFileAsRecognize(std::string audioFile) {
+    // Put audio onto the SDS saying "Tell me a joke".
+    bool error = false;
+    std::string file = audioFile;
+    std::vector<int16_t> audioData = readAudioFromFile(file, &error);
+    AudioBufferWriter->write(audioData.data(), audioData.size());
 }
 
 void InteractionManager::stopForegroundActivity() {
