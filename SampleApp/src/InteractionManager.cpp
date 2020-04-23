@@ -276,19 +276,22 @@ void InteractionManager::tap() {
 void InteractionManager::skill() {
 
 
-    size_t nWords = 1024 * 1024;
-    size_t wordSize = 2;
-    size_t maxReaders = 3;
-    size_t wordbufferSize = alexaClientSDK::avsCommon::avs::AudioInputStream::calculateBufferSize(nWords, wordSize, maxReaders);
-    auto m_Buffer = std::make_shared<avsCommon::avs::AudioInputStream::Buffer>(wordbufferSize);
-    auto m_Sds = avsCommon::avs::AudioInputStream::create(m_Buffer, wordSize, maxReaders);
-    /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
-    m_skillAudioProvider.stream =  std::move(m_Sds);
-    AudioBufferWriter = m_skillAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE,true);
+
 
     m_executor.submit([this]() {
 
         if (!m_isSkillOccurring) {
+
+            size_t nWords = 1024 * 1024;
+            size_t wordSize = 2;
+            size_t maxReaders = 3;
+            size_t wordbufferSize = alexaClientSDK::avsCommon::avs::AudioInputStream::calculateBufferSize(nWords, wordSize, maxReaders);
+            auto m_Buffer = std::make_shared<avsCommon::avs::AudioInputStream::Buffer>(wordbufferSize);
+            auto m_Sds = avsCommon::avs::AudioInputStream::create(m_Buffer, wordSize, maxReaders);
+            /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
+            m_skillAudioProvider.stream =  std::move(m_Sds);
+            AudioBufferWriter = m_skillAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE,true);
+
         if (m_client->notifyOfSkill(m_skillAudioProvider).get()) {
             sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
             m_isSkillOccurring = true;
