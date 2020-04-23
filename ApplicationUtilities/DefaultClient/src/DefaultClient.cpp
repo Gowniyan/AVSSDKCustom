@@ -81,6 +81,8 @@ using namespace avsCommon::sdkInterfaces;
 using namespace avsCommon::sdkInterfaces::endpoints;
 using namespace alexaClientSDK::endpoints;
 
+
+
 /// Key for audio channel array configurations in configuration node.
 static const std::string AUDIO_CHANNEL_CONFIG_KEY = "audioChannels";
 
