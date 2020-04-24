@@ -295,6 +295,9 @@ void InteractionManager::skill() {
         if (m_client->notifyOfSkill(m_skillAudioProvider).get()) {
             sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
             m_isSkillOccurring = true;
+            m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get();
+            m_client->notifyOfSkillEnd();
+            m_isTapOccurring = true;
             }
         } else {
             m_isSkillOccurring = false;
