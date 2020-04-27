@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -13,7 +13,8 @@
  * permissions and limitations under the License.
  */
 
-#include <fstream>
+#include <AVSCommon/Utils/Logger/Logger.h>
+
 #include "RegistrationManager/CustomerDataManager.h"
 #include "SampleApp/InteractionManager.h"
 
@@ -29,10 +30,18 @@
 namespace alexaClientSDK {
 namespace sampleApp {
 
-using namespace avsCommon::avs;
+/// String to identify log entries originating from this file.
+static const std::string TAG("InteractionManager");
 
-/// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
-static const std::string SKILL_AUDIO_FILE = "./inputs/Skill_test.wav";
+/**
+ * Create a LogEntry using this file's TAG and the specified event string.
+ *
+ * @param The event string for this @c LogEntry.
+ */
+#define LX(event) alexaClientSDK::avsCommon::utils::logger::LogEntry(TAG, event)
+
+using namespace avsCommon::avs;
+using namespace avsCommon::sdkInterfaces;
 
 InteractionManager::InteractionManager(
     std::shared_ptr<defaultClient::DefaultClient> client,
@@ -47,7 +56,6 @@ InteractionManager::InteractionManager(
 #endif
     capabilityAgents::aip::AudioProvider holdToTalkAudioProvider,
     capabilityAgents::aip::AudioProvider tapToTalkAudioProvider,
-    capabilityAgents::aip::AudioProvider skillAudioProvider,
     std::shared_ptr<sampleApp::GuiRenderer> guiRenderer,
     capabilityAgents::aip::AudioProvider wakeWordAudioProvider,
 
@@ -63,7 +71,8 @@ InteractionManager::InteractionManager(
 #ifdef MODE_CONTROLLER
     std::shared_ptr<ModeControllerHandler> modeControllerHandler,
 #endif
-    std::shared_ptr<avsCommon::sdkInterfaces::CallManagerInterface> callManager) :
+    std::shared_ptr<avsCommon::sdkInterfaces::CallManagerInterface> callManager,
+    std::shared_ptr<avsCommon::sdkInterfaces::diagnostics::DiagnosticsInterface> diagnostics) :
         RequiresShutdown{"InteractionManager"},
         m_client{client},
         m_micWrapper{micWrapper},
@@ -79,7 +88,6 @@ InteractionManager::InteractionManager(
 #endif
         m_holdToTalkAudioProvider{holdToTalkAudioProvider},
         m_tapToTalkAudioProvider{tapToTalkAudioProvider},
-        m_skillAudioProvider{skillAudioProvider},
         m_wakeWordAudioProvider{wakeWordAudioProvider},
 #ifdef POWER_CONTROLLER
         m_powerControllerHandler{powerControllerHandler},
@@ -97,17 +105,18 @@ InteractionManager::InteractionManager(
         m_isTapOccurring{false},
         m_isCallConnected{false},
         m_isMicOn{true},
-        m_isSkillOccurring{false}{
+        m_diagnostics{diagnostics} {
     if (m_wakeWordAudioProvider) {
         m_micWrapper->startStreamingMicrophoneData();
     }
 };
 
-/// added for Skill
-std::unique_ptr<alexaClientSDK::avsCommon::avs::AudioInputStream::Writer> AudioBufferWriter;
 void InteractionManager::begin() {
     m_executor.submit([this]() {
         m_userInterface->printWelcomeScreen();
+        if (m_diagnostics && m_diagnostics->getAudioInjector()) {
+            m_userInterface->printAudioInjectionHeader();
+        }
         m_userInterface->printHelpScreen();
     });
 }
@@ -244,6 +253,7 @@ void InteractionManager::holdToggled() {
         if (!m_isMicOn) {
             return;
         }
+
         if (!m_isHoldOccurring) {
             if (m_client->notifyOfHoldToTalkStart(m_holdToTalkAudioProvider).get()) {
                 m_isHoldOccurring = true;
@@ -260,6 +270,7 @@ void InteractionManager::tap() {
         if (!m_isMicOn) {
             return;
         }
+
         if (!m_isTapOccurring) {
             if (m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get()) {
                 m_isTapOccurring = true;
@@ -269,93 +280,6 @@ void InteractionManager::tap() {
             m_client->notifyOfTapToTalkEnd();
         }
     });
-}
-
-// Creating skill audio 
-
-void InteractionManager::skill() {
-
-
-
-
-    m_executor.submit([this]() {
-
-        if (!m_isSkillOccurring) {
-
-            size_t nWords = 1024 * 1024;
-            size_t wordSize = 2;
-            size_t maxReaders = 3;
-            size_t wordbufferSize = alexaClientSDK::avsCommon::avs::AudioInputStream::calculateBufferSize(nWords, wordSize, maxReaders);
-            auto m_Buffer = std::make_shared<avsCommon::avs::AudioInputStream::Buffer>(wordbufferSize);
-            auto m_Sds = avsCommon::avs::AudioInputStream::create(m_Buffer, wordSize, maxReaders);
-            /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
-            m_skillAudioProvider.stream =  std::move(m_Sds);
-            AudioBufferWriter = m_skillAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE,true);
-
-        if (m_client->notifyOfSkill(m_skillAudioProvider).get()) {
-            sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
-            m_isSkillOccurring = true;
-            m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get();
-            m_client->notifyOfSkillEnd();
-            m_isTapOccurring = true;
-            }
-        } else {
-            m_isSkillOccurring = false;
-            m_client->notifyOfSkillEnd();
-        }
-    });
-}
-
-std::vector<int16_t> readAudioFromFile(const std::string& fileName, bool* errorOccurred) {
-    const int RIFF_HEADER_SIZE = 44;
-
-    std::ifstream inputFile(fileName.c_str(), std::ifstream::binary);
-    if (!inputFile.good()) {
-        std::cout << "Couldn't open audio file!" << std::endl;
-        if (errorOccurred) {
-            *errorOccurred = true;
-        }
-        return {};
-    }
-    inputFile.seekg(0, std::ios::end);
-    int fileLengthInBytes = inputFile.tellg();
-    if (fileLengthInBytes <= RIFF_HEADER_SIZE) {
-        std::cout << "File should be larger than 44 bytes, which is the size of the RIFF header" << std::endl;
-        if (errorOccurred) {
-            *errorOccurred = true;
-        }
-        return {};
-    }
-
-    inputFile.seekg(RIFF_HEADER_SIZE, std::ios::beg);
-
-    int numSamples = (fileLengthInBytes - RIFF_HEADER_SIZE) / 2;
-
-    std::vector<int16_t> retVal(numSamples, 0);
-
-    inputFile.read((char*)&retVal[0], numSamples * 2);
-
-    if (inputFile.gcount() != numSamples * 2) {
-        std::cout << "Error reading audio file" << std::endl;
-        if (errorOccurred) {
-            *errorOccurred = true;
-        }
-        return {};
-    }
-
-    inputFile.close();
-    if (errorOccurred) {
-        *errorOccurred = false;
-    }
-    return retVal;
-}
-
-void InteractionManager::sendAudioFileAsRecognize(std::string audioFile) {
-    // Put audio onto the SDS saying "Tell me a joke".
-    bool error = false;
-    std::string file = audioFile;
-    std::vector<int16_t> audioData = readAudioFromFile(file, &error);
-    AudioBufferWriter->write(audioData.data(), audioData.size());
 }
 
 void InteractionManager::stopForegroundActivity() {
@@ -431,19 +355,24 @@ void InteractionManager::volumeControl() {
     m_executor.submit([this]() { m_userInterface->printVolumeControlScreen(); });
 }
 
-void InteractionManager::adjustVolume(avsCommon::sdkInterfaces::SpeakerInterface::Type type, int8_t delta) {
+void InteractionManager::adjustVolume(avsCommon::sdkInterfaces::ChannelVolumeInterface::Type type, int8_t delta) {
     m_executor.submit([this, type, delta]() {
         /*
          * Group the unmute action as part of the same affordance that caused the volume change, so we don't
          * send another event. This isn't a requirement by AVS.
          */
-        std::future<bool> unmuteFuture = m_client->getSpeakerManager()->setMute(type, false, true);
+        std::future<bool> unmuteFuture = m_client->getSpeakerManager()->setMute(
+            type,
+            false,
+            SpeakerManagerInterface::NotificationProperties(
+                SpeakerManagerObserverInterface::Source::LOCAL_API, false, false));
         if (!unmuteFuture.valid()) {
             return;
         }
         unmuteFuture.get();
 
-        std::future<bool> future = m_client->getSpeakerManager()->adjustVolume(type, delta);
+        std::future<bool> future =
+            m_client->getSpeakerManager()->adjustVolume(type, delta, SpeakerManagerInterface::NotificationProperties());
         if (!future.valid()) {
             return;
         }
@@ -451,9 +380,10 @@ void InteractionManager::adjustVolume(avsCommon::sdkInterfaces::SpeakerInterface
     });
 }
 
-void InteractionManager::setMute(avsCommon::sdkInterfaces::SpeakerInterface::Type type, bool mute) {
+void InteractionManager::setMute(avsCommon::sdkInterfaces::ChannelVolumeInterface::Type type, bool mute) {
     m_executor.submit([this, type, mute]() {
-        std::future<bool> future = m_client->getSpeakerManager()->setMute(type, mute);
+        std::future<bool> future =
+            m_client->getSpeakerManager()->setMute(type, mute, SpeakerManagerInterface::NotificationProperties());
         future.get();
     });
 }
@@ -799,6 +729,104 @@ void InteractionManager::sendCalendarClientErrorOccured() {
 
 void InteractionManager::setDoNotDisturbMode(bool enable) {
     m_client->getSettingsManager()->setValue<settings::DO_NOT_DISTURB>(enable);
+}
+
+void InteractionManager::diagnosticsControl() {
+    m_executor.submit([this]() { m_userInterface->printDiagnosticsScreen(); });
+}
+
+void InteractionManager::devicePropertiesControl() {
+    m_executor.submit([this]() { m_userInterface->printDevicePropertiesScreen(); });
+}
+
+void InteractionManager::showDeviceProperties() {
+    m_executor.submit([this]() {
+        if (m_diagnostics) {
+            auto deviceProperties = m_diagnostics->getDevicePropertyAggregator();
+            if (deviceProperties) {
+                m_userInterface->printAllDeviceProperties(deviceProperties->getAllDeviceProperties());
+            }
+        }
+    });
+}
+
+void InteractionManager::audioInjectionControl() {
+    m_executor.submit([this]() { m_userInterface->printAudioInjectionScreen(); });
+}
+
+void InteractionManager::injectWavFile(const std::string& absoluteFilePath) {
+    m_executor.submit([this, absoluteFilePath]() {
+        if (!m_diagnostics) {
+            ACSDK_ERROR(LX("audioInjectionFailed").d("reason", "nullDiagnosticObject"));
+            m_userInterface->printAudioInjectionFailureMessage();
+            return;
+        }
+        auto audioInjector = m_diagnostics->getAudioInjector();
+        if (!audioInjector) {
+            ACSDK_ERROR(LX("audioInjectionFailed").d("reason", "nullAudioInjector"));
+            m_userInterface->printAudioInjectionFailureMessage();
+            return;
+        }
+
+        // Notify DefaultClient of tap-to-talk if wakeword is disabled.
+        if (!m_wakeWordAudioProvider) {
+            if (!m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get()) {
+                m_userInterface->printAudioInjectionFailureMessage();
+                return;
+            }
+        }
+
+        if (!audioInjector->injectAudio(absoluteFilePath)) {
+            m_userInterface->printAudioInjectionFailureMessage();
+            return;
+        }
+    });
+}
+
+void InteractionManager::deviceProtocolTraceControl() {
+    m_executor.submit([this]() { m_userInterface->printDeviceProtocolTracerScreen(); });
+}
+
+void InteractionManager::printProtocolTrace() {
+    m_executor.submit([this]() {
+        if (m_diagnostics) {
+            auto protocolTrace = m_diagnostics->getProtocolTracer();
+            if (protocolTrace) {
+                m_userInterface->printProtocolTrace(protocolTrace->getProtocolTrace());
+            }
+        }
+    });
+}
+
+void InteractionManager::setProtocolTraceFlag(bool enabled) {
+    m_executor.submit([this, enabled]() {
+        if (m_diagnostics) {
+            auto protocolTrace = m_diagnostics->getProtocolTracer();
+            if (protocolTrace) {
+                protocolTrace->setProtocolTraceFlag(enabled);
+                m_userInterface->printProtocolTraceFlag(enabled);
+            }
+        }
+    });
+}
+
+void InteractionManager::clearProtocolTrace() {
+    m_executor.submit([this]() {
+        if (m_diagnostics) {
+            auto protocolTrace = m_diagnostics->getProtocolTracer();
+            if (protocolTrace) {
+                protocolTrace->clearTracedMessages();
+            }
+        }
+    });
+}
+
+void InteractionManager::startMicrophone() {
+    m_micWrapper->startStreamingMicrophoneData();
+}
+
+void InteractionManager::stopMicrophone() {
+    m_micWrapper->stopStreamingMicrophoneData();
 }
 
 void InteractionManager::doShutdown() {

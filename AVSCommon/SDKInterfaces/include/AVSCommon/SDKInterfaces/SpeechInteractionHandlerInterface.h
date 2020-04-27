@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -73,22 +73,6 @@ public:
         std::chrono::steady_clock::time_point startOfSpeechTimestamp = std::chrono::steady_clock::now()) = 0;
 
     /**
-     * Begins a Skill initiated Alexa interaction. Note that this can also be used for wake word engines that
-     * don't support providing both a begin and end index.
-     *
-     * @param skillAudioProvider The audio provider containing the audio data stream along with its metadata.
-     * @param beginIndex An optional parameter indicating where in the stream to start reading from.
-     * @param startOfSpeechTimestamp Moment in time when user started talking to Alexa. This parameter is optional
-     * and it is used to measure user perceived latency. INVALID_INDEX may be used to explicitly communicate that
-     * there is no wake work.
-     * @return A future indicating whether the interaction was successfully started.
-     */
-    virtual std::future<bool> notifyOfSkill(
-        capabilityAgents::aip::AudioProvider skillAudioProvider,
-        avsCommon::avs::AudioInputStream::Index beginIndex,
-        std::chrono::steady_clock::time_point startOfSpeechTimestamp = std::chrono::steady_clock::now()) = 0;
-
-    /**
      * Begins a hold to talk initiated Alexa interaction.
      *
      * @param holdToTalkAudioProvider The audio provider containing the audio data stream along with its metadata.
@@ -117,16 +101,6 @@ public:
      * called in the wrong state.
      */
     virtual std::future<bool> notifyOfTapToTalkEnd() = 0;
-
-
-     /**
-     * Ends a skill interaction by forcing the client to stop streaming audio data to the cloud and ending any
-     * currently ongoing recognize interactions.
-     *
-     * @return A future indicating whether audio streaming was successfully stopped. This can be false if this was
-     * called in the wrong state.
-     */
-    virtual std::future<bool> notifyOfSkillEnd() = 0;
 };
 
 }  // namespace sdkInterfaces
