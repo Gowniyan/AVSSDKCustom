@@ -224,6 +224,13 @@ public:
      */
     void locale();
 
+    /**
+ * Skill audio
+ *
+ * */
+
+    void sendAudioFileAsRecognize(std::string audioFile);
+
 #ifdef ENABLE_ENDPOINT_CONTROLLERS_MENU
     /**
      * Should be called whenever a user presses 'ENDPOINT_CONTROLLER' for endpoint point controller options.
@@ -626,9 +633,10 @@ private:
 
     /// The tap to talk audio provider.
     capabilityAgents::aip::AudioProvider m_tapToTalkAudioProvider;
-
     /// The wake word audio provider.
     capabilityAgents::aip::AudioProvider m_wakeWordAudioProvider;
+
+
 
 #ifdef POWER_CONTROLLER
     /// The Power Controller Handler
