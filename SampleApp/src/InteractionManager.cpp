@@ -341,6 +341,9 @@ void InteractionManager::flic() {
                     if (response_string.find(" click") != std::string::npos)
                     {
                         if (!m_isTapOccurring) {
+                            if (m_AudioBufferWriter == nullptr) {
+                                m_AudioBufferWriter = m_tapToTalkAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE, true);
+                            }
                             if (m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get()) {
                                 sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
                                 m_isTapOccurring = true;
