@@ -21,6 +21,7 @@
 
 #include "RegistrationManager/CustomerDataManager.h"
 #include "SampleApp/InteractionManager.h"
+#include "SampleApp/ConsolePrinter.h"
 
 #ifdef ENABLE_PCC
 #include <SampleApp/PhoneCaller.h>
@@ -319,6 +320,19 @@ void InteractionManager::flic() {
         if (pushbulletToken != "")
         {
             headerToken = headerToken.append(pushbulletToken);
+
+            auto initcurl = curl_easy_init();
+            if (initcurl) {
+                curl_easy_setopt(initcurl, CURLOPT_URL, "https://api.pushbullet.com/v2/pushes");
+                headers = curl_slist_append(headers, headerToken.c_str());
+                curl_easy_setopt(initcurl, CURLOPT_HTTPHEADER, headers);
+                curl_easy_setopt(initcurl, CURLOPT_USERAGENT, "curl/7.42.0");
+                curl_easy_setopt(initcurl, CURLOPT_CUSTOMREQUEST, "DELETE");
+                curl_easy_perform(initcurl);
+                curl_easy_cleanup(initcurl);
+            }
+            initcurl = NULL;
+
             while (true) {
 
                 auto curl = curl_easy_init();
@@ -338,7 +352,7 @@ void InteractionManager::flic() {
                     curl_easy_perform(curl);
                     curl_easy_cleanup(curl);
 
-                    if (response_string.find(" click") != std::string::npos)
+                    if (response_string.find(" click") != std::string::npos || response_string.find("_click") != std::string::npos)
                     {
                         if (!m_isTapOccurring) {
                             if (m_AudioBufferWriter == nullptr) {
@@ -354,23 +368,16 @@ void InteractionManager::flic() {
                             m_client->notifyOfTapToTalkEnd();
                         }
 
-
-                        auto delcurl = curl_easy_init();
-                        if (delcurl) {
-                            curl_easy_setopt(delcurl, CURLOPT_URL, "https://api.pushbullet.com/v2/pushes");
-                            headers = curl_slist_append(headers, headerToken.c_str());
-                            curl_easy_setopt(delcurl, CURLOPT_HTTPHEADER, headers);
-                            curl_easy_setopt(delcurl, CURLOPT_USERAGENT, "curl/7.42.0");
-                            curl_easy_setopt(delcurl, CURLOPT_CUSTOMREQUEST, "DELETE");
-                            curl_easy_perform(delcurl);
-                            curl_easy_cleanup(delcurl);
-                        }
-
                         break;
                     }
                 }
-                if (std::chrono::steady_clock::now() - start > std::chrono::seconds(60))
+                ConsolePrinter::prettyPrint("+----------Waiting for a click--------------+\n");
+                curl = NULL;
+                if (std::chrono::steady_clock::now() - start > std::chrono::seconds(30))
+                {
+                    ConsolePrinter::prettyPrint("+----------No click in 30 seconds--------------+\n");
                     break;
+                }
             }
         }
     });
