@@ -13,12 +13,14 @@
  * permissions and limitations under the License.
  */
 
+#include <curl/curl.h>
+#include <chrono>
+#include <iostream>
+#include <fstream>
 #include <AVSCommon/Utils/Logger/Logger.h>
 
 #include "RegistrationManager/CustomerDataManager.h"
 #include "SampleApp/InteractionManager.h"
-
-#include <fstream>
 
 #ifdef ENABLE_PCC
 #include <SampleApp/PhoneCaller.h>
@@ -49,6 +51,7 @@ using namespace avsCommon::sdkInterfaces;
 static const std::string SKILL_AUDIO_FILE = "./inputs/Skill_test.wav";
 //buffer writer for auido file
 std::unique_ptr<alexaClientSDK::avsCommon::avs::AudioInputStream::Writer> m_AudioBufferWriter;
+static const std::string TOKEN_TEXT_FILE = "./inputs/PushbulletToken.txt";
 
 InteractionManager::InteractionManager(
     std::shared_ptr<defaultClient::DefaultClient> client,
@@ -292,6 +295,108 @@ void InteractionManager::tap() {
         }
     });
 }
+
+static std::size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data) {
+    data->append((char*)ptr, size * nmemb);
+    return size * nmemb;
+}
+
+void InteractionManager::flic() {
+    m_executor.submit([this]() {
+        if (!m_isMicOn) {
+            return;
+        }
+
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        
+        std::string response_string;
+        std::string pushbulletToken = "";
+        std::string headerToken = "Access-Token: ";
+        struct curl_slist* headers = NULL;
+
+        pushbulletToken = readTokenFromFile();
+
+        if (pushbulletToken != "")
+        {
+            headerToken = headerToken.append(pushbulletToken);
+            while (true) {
+
+                auto curl = curl_easy_init();
+
+                if (curl) {
+                    curl_easy_setopt(curl, CURLOPT_URL, "https://api.pushbullet.com/v2/pushes?active=true&modified_after=1400000000");
+                    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+                    headers = curl_slist_append(headers, headerToken.c_str());
+                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+                    curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
+                    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
+                    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+                    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunction);
+                    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
+
+
+                    curl_easy_perform(curl);
+                    curl_easy_cleanup(curl);
+
+                    if (response_string.find(" click") != std::string::npos)
+                    {
+                        if (!m_isTapOccurring) {
+                            if (m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get()) {
+                                sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
+                                m_isTapOccurring = true;
+                            }
+                        }
+                        else {
+                            m_isTapOccurring = false;
+                            m_client->notifyOfTapToTalkEnd();
+                        }
+
+
+                        auto delcurl = curl_easy_init();
+                        if (delcurl) {
+                            curl_easy_setopt(delcurl, CURLOPT_URL, "https://api.pushbullet.com/v2/pushes");
+                            headers = curl_slist_append(headers, headerToken.c_str());
+                            curl_easy_setopt(delcurl, CURLOPT_HTTPHEADER, headers);
+                            curl_easy_setopt(delcurl, CURLOPT_USERAGENT, "curl/7.42.0");
+                            curl_easy_setopt(delcurl, CURLOPT_CUSTOMREQUEST, "DELETE");
+                            curl_easy_perform(delcurl);
+                            curl_easy_cleanup(delcurl);
+                        }
+
+                        break;
+                    }
+                }
+                if (std::chrono::steady_clock::now() - start > std::chrono::seconds(60))
+                    break;
+            }
+        }
+    });
+}
+
+std::string InteractionManager::readTokenFromFile()
+{
+    std::string Token = "";
+    std::string line = "";
+
+
+    std::ifstream myfile(TOKEN_TEXT_FILE, std::ios_base::out);
+    if (myfile.is_open())
+    {
+        while (getline(myfile, line))
+        {
+            line.erase(line.find_last_not_of(" \n\r\t") + 1);
+
+            Token += line;
+        }
+        myfile.close();
+    }
+
+    Token.erase(Token.find_last_not_of(" \n\r\t") + 1);
+
+    return Token;
+
+}
+
 
 
 std::vector<int16_t> readAudioFromFile(const std::string& fileName, bool* errorOccurred) {

@@ -54,6 +54,7 @@ static const char SPEAKER_CONTROL = 'p';
 static const char FIRMWARE_VERSION = 'f';
 static const char RESET = 'k';
 static const char REAUTHORIZE = 'z';
+static const char FLIC = 'l';
 
 #ifdef ENABLE_ENDPOINT_CONTROLLERS_MENU
 static const char ENDPOINT_CONTROLLER = 'e';
@@ -296,6 +297,8 @@ SampleAppReturnCode UserInputManager::run() {
             m_interactionManager->holdToggled();
         } else if (x == TAP) {
             m_interactionManager->tap();
+        } else if (x == FLIC) {
+            m_interactionManager->flic();
         } else if (x == PLAY) {
             m_interactionManager->playbackPlay();
         } else if (x == PAUSE) {

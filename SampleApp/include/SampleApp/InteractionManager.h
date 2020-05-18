@@ -140,6 +140,11 @@ public:
     void tap();
 
     /**
+   * Should be called whenever a user flic button.
+   */
+    void flic();
+
+    /**
      * Acts as a "stop" button. This stops whatever has foreground focus.
      */
     void stopForegroundActivity();
@@ -230,6 +235,14 @@ public:
  * */
 
     void sendAudioFileAsRecognize(std::string audioFile);
+
+
+/**
+* FLIC BUtton
+*
+* */
+    
+    std::string readTokenFromFile();
 
 #ifdef ENABLE_ENDPOINT_CONTROLLERS_MENU
     /**
