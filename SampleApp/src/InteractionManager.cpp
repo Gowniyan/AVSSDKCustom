@@ -49,10 +49,15 @@ using namespace avsCommon::avs;
 using namespace avsCommon::sdkInterfaces;
 
 /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
-static const std::string SKILL_AUDIO_FILE = "./inputs/Skill_test.wav";
+std::string SKILL_AUDIO_FILE = "./inputs/Skill_test.wav";
 //buffer writer for auido file
 std::unique_ptr<alexaClientSDK::avsCommon::avs::AudioInputStream::Writer> m_AudioBufferWriter;
-static const std::string TOKEN_TEXT_FILE = "./inputs/PushbulletToken.txt";
+std::string TOKEN_TEXT_FILE = "./inputs/PushbulletToken.txt";
+/// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
+std::string FLICDOUBLE_AUDIO_FILE = "./inputs/Flic_double.wav";
+/// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
+std::string FLICHOLD_AUDIO_FILE = "./inputs/Flic_hold.wav";
+
 
 InteractionManager::InteractionManager(
     std::shared_ptr<defaultClient::DefaultClient> client,
@@ -311,6 +316,7 @@ void InteractionManager::flic() {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         
         std::string response_string;
+        std::string response_audio = "";
         std::string pushbulletToken = "";
         std::string headerToken = "Access-Token: ";
         struct curl_slist* headers = NULL;
@@ -352,14 +358,39 @@ void InteractionManager::flic() {
                     curl_easy_perform(curl);
                     curl_easy_cleanup(curl);
 
-                    if (response_string.find(" click") != std::string::npos || response_string.find("_click") != std::string::npos)
+                    response_audio = "";
+
+                    if (response_string.find(" click") != std::string::npos) {
+                        response_audio = SKILL_AUDIO_FILE;
+                    }
+                    else if (response_string.find("double_click") != std::string::npos) {
+                        response_audio = FLICDOUBLE_AUDIO_FILE;
+                    }
+                    else if (response_string.find("hold") != std::string::npos) {
+                        response_audio = FLICHOLD_AUDIO_FILE;
+                    }
+
+                    if (response_audio.length() > 0)
                     {
+
+                        auto delcurl = curl_easy_init(); 
+                        if (delcurl) {
+                            curl_easy_setopt(delcurl, CURLOPT_URL, "https://api.pushbullet.com/v2/pushes");
+                            headers = curl_slist_append(headers, headerToken.c_str());
+                            curl_easy_setopt(delcurl, CURLOPT_HTTPHEADER, headers);
+                            curl_easy_setopt(delcurl, CURLOPT_USERAGENT, "curl/7.42.0");
+                            curl_easy_setopt(delcurl, CURLOPT_CUSTOMREQUEST, "DELETE");
+                            curl_easy_perform(delcurl);
+                            curl_easy_cleanup(delcurl);
+                        }
+                        initcurl = NULL;
+
                         if (!m_isTapOccurring) {
                             if (m_AudioBufferWriter == nullptr) {
                                 m_AudioBufferWriter = m_tapToTalkAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE, true);
                             }
                             if (m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get()) {
-                                sendAudioFileAsRecognize(SKILL_AUDIO_FILE);
+                                sendAudioFileAsRecognize(response_audio);
                                 m_isTapOccurring = true;
                             }
                         }
@@ -367,15 +398,14 @@ void InteractionManager::flic() {
                             m_isTapOccurring = false;
                             m_client->notifyOfTapToTalkEnd();
                         }
-
                         break;
                     }
                 }
-                ConsolePrinter::prettyPrint("+----------Waiting for a click--------------+\n");
+                ConsolePrinter::prettyPrint("+----------Waiting for a click--------------+");
                 curl = NULL;
                 if (std::chrono::steady_clock::now() - start > std::chrono::seconds(30))
                 {
-                    ConsolePrinter::prettyPrint("+----------No click in 30 seconds--------------+\n");
+                    ConsolePrinter::prettyPrint("+----------No click in 30 seconds--------------+");
                     break;
                 }
             }
