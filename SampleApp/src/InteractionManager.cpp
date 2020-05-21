@@ -57,6 +57,8 @@ std::string TOKEN_TEXT_FILE = "./inputs/PushbulletToken.txt";
 std::string FLICDOUBLE_AUDIO_FILE = "./inputs/Flic_double.wav";
 /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
 std::string FLICHOLD_AUDIO_FILE = "./inputs/Flic_hold.wav";
+/// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
+std::string FLICCLICK_AUDIO_FILE = "./inputs/Flic_click.wav";
 
 
 InteractionManager::InteractionManager(
@@ -361,7 +363,7 @@ void InteractionManager::flic() {
                     response_audio = "";
 
                     if (response_string.find(" click") != std::string::npos) {
-                        response_audio = SKILL_AUDIO_FILE;
+                        response_audio = FLICCLICK_AUDIO_FILE;
                     }
                     else if (response_string.find("double_click") != std::string::npos) {
                         response_audio = FLICDOUBLE_AUDIO_FILE;
