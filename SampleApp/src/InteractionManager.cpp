@@ -58,7 +58,7 @@ std::string FLICDOUBLE_AUDIO_FILE = "./inputs/Flic_double.wav";
 /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
 std::string FLICHOLD_AUDIO_FILE = "./inputs/Flic_hold.wav";
 /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
-std::string FLICCLICK_AUDIO_FILE = "./inputs/Flic_click.wav";
+std::string FLICCLICK_AUDIO_FILE = "./inputs/Flic_single.wav";
 
 
 InteractionManager::InteractionManager(
