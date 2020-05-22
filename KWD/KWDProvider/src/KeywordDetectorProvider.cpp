@@ -23,13 +23,13 @@
 
 #ifdef KWD_KITTAI
 /// The sensitivity of the Kitt.ai engine.
-static const std::string KITT_AI_SENSITIVITY = "0.8,0.80";
+static const std::string KITT_AI_SENSITIVITY = "0.5";
 
 /// The audio amplifier level of the Kitt.ai engine.
-static const float KITT_AI_AUDIO_GAIN = 2.0;
+static const float KITT_AI_AUDIO_GAIN = 1.0;
 
 /// Whether Kitt.ai should apply front end audio processing.
-static const bool KITT_AI_APPLY_FRONT_END_PROCESSING = true;
+static const bool KITT_AI_APPLY_FRONT_END_PROCESSING = false;
 #endif
 
 using namespace alexaClientSDK;
@@ -49,7 +49,7 @@ std::unique_ptr<kwd::AbstractKeywordDetector> KeywordDetectorProvider::create(
         keyWordObservers,
         keyWordDetectorStateObservers,
         pathToInputFolder + "/common.res",
-        {{pathToInputFolder + "/jarvis.umdl", "JARVIS", KITT_AI_SENSITIVITY}},
+        {{pathToInputFolder + "/sentai.pmdl", "SENTAI", KITT_AI_SENSITIVITY}},
         KITT_AI_AUDIO_GAIN,
         KITT_AI_APPLY_FRONT_END_PROCESSING);
 
