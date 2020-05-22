@@ -50,7 +50,7 @@ public:
          * 1. The higher this is, the more keyword detections will occur. However, more false alarms might also occur
          * more frequently. @see https://github.com/Kitt-AI/snowboy for more information regarding this.
          */
-        double sensitivity;
+        std::string sensitivity;
     };
 
     /**

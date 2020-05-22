@@ -107,7 +107,7 @@ static const bool KITTAI_APPLY_FRONTEND_PROCESSING = false;
  * The sensitivity to the keyword in the model. Set to 0.6 as this is what was described as optimal on the Kitt.ai
  * Github page.
  */
-static const double KITTAI_SENSITIVITY = 0.6;
+static const std::string KITTAI_SENSITIVITY = "0.6";
 
 /// A test observer that mocks out the KeyWordObserverInterface##onKeyWordDetected() call.
 class testKeyWordObserver : public KeyWordObserverInterface {

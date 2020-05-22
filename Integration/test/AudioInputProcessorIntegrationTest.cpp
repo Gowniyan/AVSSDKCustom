@@ -195,7 +195,7 @@ static const std::string JSON_MESSAGE_PAYLOAD_KEY = "payload";
  * Github page.
  */
 #ifdef KWD_KITTAI
-static const double KITTAI_SENSITIVITY = 0.6;
+static const std::string KITTAI_SENSITIVITY = "0.6";
 #endif
 /// The compatible encoding for Kitt.ai.
 static const avsCommon::utils::AudioFormat::Encoding COMPATIBLE_ENCODING =
