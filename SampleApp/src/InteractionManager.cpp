@@ -59,6 +59,8 @@ std::string FLICDOUBLE_AUDIO_FILE = "./inputs/Flic_double.wav";
 std::string FLICHOLD_AUDIO_FILE = "./inputs/Flic_hold.wav";
 /// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
 std::string FLICCLICK_AUDIO_FILE = "./inputs/Flic_single.wav";
+/// This is a 16 bit 16 kHz little endian linear PCM audio file of "Skill" to be recognized.
+std::string INTRO_AUDIO_FILE = "./inputs/sentai_intro.wav";
 
 
 InteractionManager::InteractionManager(
@@ -140,7 +142,16 @@ void InteractionManager::begin() {
 }
 
 void InteractionManager::help() {
-    m_executor.submit([this]() { m_userInterface->printHelpScreen(); });
+    m_executor.submit([this]() { m_userInterface->printHelpScreen(); 
+    
+    if (m_AudioBufferWriter == nullptr) {
+        m_AudioBufferWriter = m_tapToTalkAudioProvider.stream->createWriter(avsCommon::avs::AudioInputStream::Writer::Policy::NONBLOCKABLE, true);
+    }
+    if (m_client->notifyOfTapToTalk(m_tapToTalkAudioProvider).get()) {
+        sendAudioFileAsRecognize(INTRO_AUDIO_FILE);
+        m_isTapOccurring = true;
+    }
+    });
 }
 
 void InteractionManager::limitedHelp() {
